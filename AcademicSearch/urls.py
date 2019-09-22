@@ -15,7 +15,10 @@ Including another URLconf
 """
 from django.conf.urls import url
 from django.contrib import admin
+from Web.views import findExperts, expertDetail
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
+    url(r'^api/find-experts-by-*', findExperts),
+    url(r'^api/expert', expertDetail),
 ]
