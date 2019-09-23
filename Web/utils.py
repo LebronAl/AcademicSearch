@@ -64,35 +64,47 @@ def expertsDetailScientistin(uri):
                     temp[i] = temp[i].replace("<em>","").replace("</em>","")
             response['domains'] = temp   
             response['sources'] = ['科学家在线']
-            for i in res['data']['papers']:
-                paper = {}
-                try:
-                    paper['publishYear'] = None
-                    paper['url'] = None
-                    paper['name'] = i['title']
-                    paper['authors'] = None
-                    paper['timesCited'] = None
-                    paper['publication'] = None
-                    paper['keywords'] = i['kws'].replace(";;",";")
-                    paper['abstract'] = i['abs']
-                    response['papers'].append(paper)
-                except:
-                    pass
-            for i in res['data']['patents']:
-                patent = {}
-                try:
-                    patent['name'] = i['title']
-                    patent['publicationNumber'] = i['pubNum']
-                    patent['applicationDate'] = None
-                    patent['abstract'] = i['abs']
-                    response['patents'].append(patent)
-                except:
-                    pass
+            try:
+                for i in res['data']['papers']:
+                    paper = {}
+                    try:
+                        paper['publishYear'] = None
+                        paper['url'] = None
+                        paper['name'] = i['title']
+                        paper['authors'] = None
+                        paper['timesCited'] = None
+                        paper['publication'] = None
+                        if i['kws'] == "null":
+                            paper['keywords'] = []
+                        else:
+                            paper['keywords'] = i['kws'].replace("；"," ").replace(";"," ").replace(","," ").replace("，"," ").split()
+                        paper['abstract'] = i['abs']
+                        response['papers'].append(paper)
+                    except:
+                        pass
+            except:
+                pass
+            try:
+                for i in res['data']['patents']:
+                    patent = {}
+                    try:
+                        patent['name'] = i['title']
+                        patent['publicationNumber'] = i['pubNum']
+                        patent['applicationDate'] = None
+                        patent['abstract'] = i['abs']
+                        response['patents'].append(patent)
+                    except:
+                        pass
+            except:
+                pass
             try:
                 for i in res['data']['nps']:
                     project = {}
                     project['name'] = i['title']
-                    project['keywords'] = i['kws']
+                    if i['kws'] == "null":
+                        project['keywords'] = []
+                    else:
+                        project['keywords'] = i['kws'].replace("；"," ").replace(";"," ").replace(","," ").replace("，"," ").split()
                     project['leader'] = None
                     project['fund'] = None
                     project['organization'] = None
@@ -185,3 +197,4 @@ def merge3(a, b, c):
         res = [i for i in merge2(a[mlen:],b[mlen:])]
     for i in range(len(res)):
         yield res[i]
+        
