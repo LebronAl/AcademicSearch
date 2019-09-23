@@ -8,7 +8,6 @@ import Web.storage as storage
 import json
 
 hack = {'Scientistin':utils.findExpertsScientistin,'THUCloud':utils.findExpertsTHUCloud,'Acemap':utils.findExpertsAcemap}
-
 s = storage.Storage()
 
 def findExperts(request):
@@ -23,6 +22,10 @@ def findExperts(request):
             index = 'patent'
         elif request.path == '/api/find-experts-by-paper':
             index = 'paper'
+        elif request.path == '/api/find-experts-by-tag':
+            index = 'tag'
+        elif request.path == '/api/find-experts-by-org':
+            index = 'org'
         else:
             return HttpResponse("Request url error!")
         para = json.loads(request.body.decode())
@@ -38,7 +41,7 @@ def findExperts(request):
             else:
                 result = [i for i in utils.merge3(hack[para['sources'][0]](para['condition'],index),hack[para['sources'][1]](para['condition'],index),hack[para['sources'][2]](para['condition'],index))]
             s.add(para['condition'],index,result)
-            results['resultForm'] = result   
+            results['resultForm'] = result 
         return JsonResponse(results)
     else:
         return HttpResponse("Request method error!")
@@ -46,7 +49,8 @@ def findExperts(request):
 def expertDetail(request):
     if request.method == 'POST':
         para = json.loads(request.body.decode())
-        result = {'resultForm':[]}
+        result = {'expert':{}}
+        result['expert'] = utils.expertsDetailScientistin(para['fetchId'])
         return JsonResponse(result)
     else:
         return HttpResponse("Request method error!")
