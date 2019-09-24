@@ -1,13 +1,12 @@
 import requests
 import json
 import random
+import sqlite3
 
 ScientistinPrefix = "http://39.107.153.254/api/"
-# 需要线程锁，暂时懒得做
 ScientistinCookie = ["qyJSh4FW3GFScH3ZgFdDg4CFs6vu4mcw0DBX53KH8yOH4Z8U4lGdzGm4zGF-eh2v3Yt0710f8ZKC4FU3thCP3DCmtn7S8Ft77Ft3d4iEq6K-3EF-8186IZ4VtIUF8D4Tr40K71CDqZBZd3FO",
     "5HU1g5XJq43D5oGucyKe5lXkq10S4DiRgHuSIy9U4h85cm9c46twh5dCdXF-eh2v3Yt0710f8ZKC4FU3thCP3DCmtn7S8Ft77Ft3d4iEq6K-3EF-814vIEs_dIOa5HOW569vh1sWsFmXh43O",
     "8nCWsY8o36N-gXGocYKZsYc_I1G6sjTuzH3yg5yZ73OGqXCv4G8a4G0mtGF-eh2v3Yt0710f8ZKC4FU3thCP3DCmtn7S8Ft77Ft3d4iEq6K-3EF-8183ql_D8DiRr1iSaydVz40W3msvtylO"]
-
 AcemapPrefix = "1"
 
 def findExpertsScientistin(name, way):
@@ -20,7 +19,10 @@ def findExpertsScientistin(name, way):
             for i in res['data']['talents']:
                 response={'fetchId':None,'name':None,"organization":None,"domains":[],'sources':['科学家在线']}
                 response['fetchId'] = i['uri']
-                response['name'] = i['name'][0]
+                try:
+                    response['name'] = i['name'][0]
+                except:
+                    pass
                 try:
                     response['organization'] = i['org'].replace("<em>","").replace("</em>","")
                 except:
@@ -50,7 +52,10 @@ def expertsDetailScientistin(uri):
         if res['code'] != 130:
             response['fetchId'] = res['data']['uri']
             # 默认返回第一个姓名
-            response['name'] = res['data']['name'][0]
+            try:
+                response['name'] = res['data']['name'][0]
+            except:
+                pass
             try:
                 response['organization'] = res['data']['org'].replace("<em>","").replace("</em>","")
             except:
@@ -59,15 +64,18 @@ def expertsDetailScientistin(uri):
                 response['hIndex'] = res['data']['hIndex']
             except:
                 pass
-            temp = res['data']['domains']
-            for i in range(len(temp)):
-                    temp[i] = temp[i].replace("<em>","").replace("</em>","")
-            response['domains'] = temp   
-            response['sources'] = ['科学家在线']
+            try: 
+                temp = res['data']['domains']
+                for i in range(len(temp)):
+                        temp[i] = temp[i].replace("<em>","").replace("</em>","")
+                response['domains'] = temp   
+                response['sources'] = ['科学家在线']
+            except:
+                pass
             try:
                 for i in res['data']['papers']:
-                    paper = {}
                     try:
+                        paper = {}
                         paper['publishYear'] = None
                         paper['url'] = None
                         paper['name'] = i['title']
@@ -86,8 +94,8 @@ def expertsDetailScientistin(uri):
                 pass
             try:
                 for i in res['data']['patents']:
-                    patent = {}
                     try:
+                        patent = {}
                         patent['name'] = i['title']
                         patent['publicationNumber'] = i['pubNum']
                         patent['applicationDate'] = None
@@ -99,27 +107,33 @@ def expertsDetailScientistin(uri):
                 pass
             try:
                 for i in res['data']['nps']:
-                    project = {}
-                    project['name'] = i['title']
-                    if i['kws'] == "null":
-                        project['keywords'] = []
-                    else:
-                        project['keywords'] = i['kws'].replace("；"," ").replace(";"," ").replace(","," ").replace("，"," ").split()
-                    project['leader'] = None
-                    project['fund'] = None
-                    project['organization'] = None
-                    response['projects'].append(project)
+                    try:
+                        project = {}
+                        project['name'] = i['title']
+                        if i['kws'] == "null":
+                            project['keywords'] = []
+                        else:
+                            project['keywords'] = i['kws'].replace("；"," ").replace(";"," ").replace(","," ").replace("，"," ").split()
+                        project['leader'] = None
+                        project['fund'] = None
+                        project['organization'] = None
+                        response['projects'].append(project)
+                    except:
+                        pass
             except:
                 pass
             try:
                 for i in res['data']['cps']:
-                    project = {}
-                    project['name'] = i['title']
-                    project['keywords'] = None
-                    project['leader'] = None
-                    project['fund'] = None
-                    project['organization'] = None
-                    response['projects'].append(project)
+                    try:
+                        project = {}
+                        project['name'] = i['title']
+                        project['keywords'] = None
+                        project['leader'] = None
+                        project['fund'] = None
+                        project['organization'] = None
+                        response['projects'].append(project)
+                    except:
+                        pass
             except:
                 pass
             break
@@ -142,6 +156,7 @@ def expertsDetailScientistin(uri):
                     response['collaborators'].append(author)
                 except:
                     pass
+
             break
         else:
             ScientistinCookie.remove(ScientistinCookie[index])
@@ -150,21 +165,59 @@ def expertsDetailScientistin(uri):
     return response
 
 
+def findExpertsTHUCloud(name, way):
+    responses = []
+    try:
+        db = sqlite3.connect("./Web/THUCloud/thucloud.sqlite3")
+    except:
+        print("THUCloud data lost!")
+        return responses
+    db_cousor = db.cursor()
+    if way in ["name","domain","org","tag"]:
+        if way == "name":
+            index = "name"
+        elif way == "domain" or way == "tag":
+            index = "keywords"
+        else:
+            index = "organization"
+        db_cousor.execute("select * from original where " + index + ' like "%' + str(name).strip() + '%"')
+        results = db_cousor.fetchall()
+        for result in results:
+            response={'fetchId':None,'name':None,"organization":None,"domains":[],'sources':['THUCloud']}
+            response['fetchId'] = result[0]
+            response['name'] = result[1]
+            response['organization'] = result[2]
+            response['domains'] = result[3].split()
+            responses.append(response)
+    db.commit()
+    db.close()
+    return responses
+
+def expertsDetailTHUCloud(id):
+    response = {'fetchId': None, 'name': None, 'organization': None, 'hIndex': None, 'domains': [], 'sources': [], 'papers': [], 'collaborators': [], 'patents': [], 'projects': []}
+    try:
+        db = sqlite3.connect("./Web/THUCloud/thucloud.sqlite3")
+    except:
+        print("THUCloud data lost!")
+        return response
+    db_cousor = db.cursor()
+    db_cousor.execute("select * from original where id = " + id)
+    result = db_cousor.fetchone()
+    if result is not None:
+        response['fetchId'] = result[0]
+        response['name'] = result[1]
+        response['organization'] = result[2]
+        response['domains'] = result[3].split()
+    db.commit()
+    db.close()
+    return response
 
 
-def findExpertsAcemap(name,way):
+def findExpertsAcemap(name, way):
     return []
 
-def ExpertsDetailAcemap(name):
+def expertsDetailAcemap(name):
     return []
-
-
-def findExpertsTHUCloud(name,way):
-    return []
-
-def expertsDetailTHUCloud(name):
-    return []
-
 
 
 def merge2(a, b):
@@ -197,4 +250,3 @@ def merge3(a, b, c):
         res = [i for i in merge2(a[mlen:],b[mlen:])]
     for i in range(len(res)):
         yield res[i]
-        

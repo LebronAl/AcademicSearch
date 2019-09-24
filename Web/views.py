@@ -6,11 +6,13 @@ from django.http import HttpResponse, JsonResponse
 import Web.utils as utils
 import Web.storage as storage
 import json
+import threading
 
 hack = {'Scientistin':utils.findExpertsScientistin,'THUCloud':utils.findExpertsTHUCloud,'Acemap':utils.findExpertsAcemap}
 s = storage.Storage()
 
 def findExperts(request):
+    lock = threading.Lock()
     if request.method == 'POST':
         if request.path == '/api/find-experts-by-name':
             index = 'name'
@@ -30,7 +32,9 @@ def findExperts(request):
             return HttpResponse("Request url error!")
         para = json.loads(request.body.decode())
         results = {'resultForm':[]}
-        result = s.get(para['condition'],index)
+        lock.acquire()
+        result = s.get(para['condition'],index,para['sources'])
+        lock.release()
         if result != None:
             results['resultForm'] = result
         else:
@@ -40,7 +44,9 @@ def findExperts(request):
                 result = [i for i in utils.merge2(hack[para['sources'][0]](para['condition'],index),hack[para['sources'][1]](para['condition'],index))]
             else:
                 result = [i for i in utils.merge3(hack[para['sources'][0]](para['condition'],index),hack[para['sources'][1]](para['condition'],index),hack[para['sources'][2]](para['condition'],index))]
-            s.add(para['condition'],index,result)
+            lock.acquire()    
+            s.add(para['condition'],index,para['sources'],result)
+            lock.release()
             results['resultForm'] = result 
         return JsonResponse(results)
     else:
@@ -50,7 +56,12 @@ def expertDetail(request):
     if request.method == 'POST':
         para = json.loads(request.body.decode())
         result = {'expert':{}}
-        result['expert'] = utils.expertsDetailScientistin(para['fetchId'])
+        if para["source"] == "科学家在线":
+            result['expert'] = utils.expertsDetailScientistin(para['fetchId'])
+        elif para["source"] == "THUCloud":
+            result['expert'] = utils.expertsDetailTHUCloud(para['fetchId'])
+        else:
+            result['expert'] = utils.expertsDetailAcemap(para['fetchId'])
         return JsonResponse(result)
     else:
         return HttpResponse("Request method error!")
