@@ -1,0 +1,7 @@
+<uwsgi>
+    <socket>:8000</socket>
+    <chdir>/root/backend/Academic-Search-Backend</chdir>
+    <module>AcademicSearch.wsgi</module>
+    <processes>8</processes>
+    <daemonize>uwsgi.log</daemonize>
+</uwsgi>
