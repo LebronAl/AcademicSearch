@@ -194,7 +194,7 @@ def findExpertsTHUCloud(name, way):
     return responses
 
 def expertsDetailTHUCloud(id):
-    response = {'fetchId': None, 'name': None, 'organization': None, 'hIndex': None, 'domains': [], 'sources': [], 'papers': [], 'collaborators': [], 'patents': [], 'projects': []}
+    response = {'fetchId': None, 'name': None, 'organization': None, 'hIndex': None, 'domains': [], 'sources': ['THUCloud'], 'papers': [], 'collaborators': [], 'patents': [], 'projects': []}
     try:
         db = sqlite3.connect("./Web/THUCloud/thucloud.sqlite3")
     except:
