@@ -7,6 +7,8 @@ import Web.utils as utils
 import Web.storage as storage
 import json
 import threading
+import math
+import operator
 
 hack = {'Scientistin':utils.findExpertsScientistin,'THUCloud':utils.findExpertsTHUCloud,'Acemap':utils.findExpertsAcemap}
 s = storage.Storage()
@@ -31,23 +33,31 @@ def findExperts(request):
         else:
             return HttpResponse("Request url error!")
         para = json.loads(request.body.decode())
-        results = {'resultForm':[]}
+        results = {'resultForm':[],'totalEntries':0,'currentPage':para['currentPage']}
         lock.acquire()
         result = s.get(para['condition'],index,para['sources'])
         lock.release()
         if result != None:
-            results['resultForm'] = result
+            start,end = utils.getStartAndEnd(para['size'],para['currentPage'],len(result))
+            results['resultForm'] = result[start:end]
+            results['totalEntries'] = len(result)
         else:
             if len(para['sources']) == 1:
                 result = hack[para['sources'][0]](para['condition'],index)
             elif len(para['sources']) == 2:
-                result = [i for i in utils.merge2(hack[para['sources'][0]](para['condition'],index),hack[para['sources'][1]](para['condition'],index))]
+                result = hack[para['sources'][0]](para['condition'],index)
+                result.extend(hack[para['sources'][1]](para['condition'],index))
             else:
-                result = [i for i in utils.merge3(hack[para['sources'][0]](para['condition'],index),hack[para['sources'][1]](para['condition'],index),hack[para['sources'][2]](para['condition'],index))]
+                result = hack[para['sources'][0]](para['condition'],index)
+                result.extend(hack[para['sources'][1]](para['condition'],index))
+                result.extend(hack[para['sources'][2]](para['condition'],index))           
+            result = sorted(result,key=operator.itemgetter('originalrecommendation'),reverse=True)
             lock.acquire()    
             s.add(para['condition'],index,para['sources'],result)
             lock.release()
-            results['resultForm'] = result 
+            start,end = utils.getStartAndEnd(para['size'],para['currentPage'],len(result))
+            results['resultForm'] = result[start:end] 
+            results['totalEntries'] = len(result)
         return JsonResponse(results)
     else:
         return HttpResponse("Request method error!")
@@ -56,7 +66,7 @@ def expertDetail(request):
     if request.method == 'POST':
         para = json.loads(request.body.decode())
         result = {'expert':{}}
-        if para["source"] == "科学家在线":
+        if para["source"] == "Scientistin":
             result['expert'] = utils.expertsDetailScientistin(para['fetchId'])
         elif para["source"] == "THUCloud":
             result['expert'] = utils.expertsDetailTHUCloud(para['fetchId'])

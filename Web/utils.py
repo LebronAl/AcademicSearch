@@ -16,24 +16,68 @@ def findExpertsScientistin(name, way):
         para = {'q':name,'range':way,'token':ScientistinCookie[index],'size':100}
         res = json.loads(requests.get(ScientistinPrefix + "s",params=para).content.decode())
         if res['code'] != 130:
+            max = 0
             for i in res['data']['talents']:
-                response={'fetchId':None,'name':None,"organization":None,"domains":[],'sources':['科学家在线']}
+                if max < i['hIndex']:
+                    max = i["hIndex"]
+            if max == 0:
+                max = 1
+            for i in res['data']['talents']:
+                print(i)
+                academic = 70 * (i['hIndex'] / max)
+                normalization = 0
+                step = 1/8
+                response={'fetchId':None,'name':None,"organization":None,"domains":[],'sources':['Scientistin'], 'academic':format(academic,".2f"), 'normalization':"", 'recommendation':""}
                 response['fetchId'] = i['uri']
                 try:
-                    response['name'] = i['name'][0]
+                    response['name'] = i['name'][0].replace("<em>","").replace("</em>","")
+                    normalization  = normalization + step
                 except:
                     pass
                 try:
                     response['organization'] = i['org'].replace("<em>","").replace("</em>","")
+                    normalization  = normalization + step
                 except:
                     pass
                 try: 
                     temp = i['domains']
-                    for i in range(len(temp)):
-                        temp[i] = temp[i].replace("<em>","").replace("</em>","")
-                    response['domains'] = temp      
+                    for j in range(len(temp)):
+                        temp[j] = temp[j].replace("<em>","").replace("</em>","")
+                    response['domains'] = temp    
+                    normalization  = normalization + step 
                 except:
                     pass
+                try:
+                    if len(i['papers']) != 0:
+                        normalization  = normalization + step
+                except:
+                    pass
+                try:
+                    if len(i['patents']) != 0:
+                        normalization  = normalization + step
+                except:
+                    pass
+                try:
+                    if len(i['nps']) != 0:
+                        normalization  = normalization + step
+                    elif len(i['cps'] != 0):
+                        normalization  = normalization + step
+                except:
+                    pass
+                try:
+                    if i['coWorkers'] != 0:
+                        normalization  = normalization + step
+                except:
+                    pass
+                try:
+                    _ = i['hIndex']
+                    normalization  = normalization + step
+                except:
+                    pass
+                normalization = 30 * normalization
+                response['normalization'] = format(normalization,".2f")
+                response['recommendation'] = format(academic + normalization,".2f")
+                response['originalrecommendation'] = normalization + academic
                 responses.append(response)
             break
         else:
@@ -44,7 +88,7 @@ def findExpertsScientistin(name, way):
 
 
 def expertsDetailScientistin(uri):
-    response = {'fetchId': None, 'name': None, 'organization': None, 'hIndex': None, 'domains': [], 'sources': [], 'papers': [], 'collaborators': [], 'patents': [], 'projects': []}
+    response = {'fetchId': None, 'name': None, 'organization': None, 'hIndex': None, 'domains': [], 'sources': [], 'papers': [], 'collaborators': [], 'patents': [], 'projects': [],'academic':0, 'normalization':0, 'recommendation':""}
     while True:
         index = random.randint(0,len(ScientistinCookie)-1)
         para = {'uri':uri,'token':ScientistinCookie[index]}
@@ -69,7 +113,7 @@ def expertsDetailScientistin(uri):
                 for i in range(len(temp)):
                         temp[i] = temp[i].replace("<em>","").replace("</em>","")
                 response['domains'] = temp   
-                response['sources'] = ['科学家在线']
+                response['sources'] = ['Scientistin']
             except:
                 pass
             try:
@@ -175,19 +219,22 @@ def findExpertsTHUCloud(name, way):
     db_cousor = db.cursor()
     if way in ["name","domain","org","tag"]:
         if way == "name":
-            index = "name"
+            db_cousor.execute("select * from original where name is '" + str(name).strip() + "'")
         elif way == "domain" or way == "tag":
-            index = "keywords"
+            db_cousor.execute('select * from original where keywords like "%' + str(name).strip() + '%"')
         else:
-            index = "organization"
-        db_cousor.execute("select * from original where " + index + ' like "%' + str(name).strip() + '%"')
+            db_cousor.execute('select * from original where organization like "%' + str(name).strip() + '%"')
         results = db_cousor.fetchall()
         for result in results:
-            response={'fetchId':None,'name':None,"organization":None,"domains":[],'sources':['THUCloud']}
+            academic = 0.7*random.randint(0,50)
+            normalization = 0.3*(100/8*3)
+            response={'fetchId':None, 'name':None, "organization":None, "domains":[], 'sources':['THUCloud'], 'academic':format(academic,'.2f'), 'normalization':format(normalization ,'.2f'), 'recommendation':""}
             response['fetchId'] = result[0]
             response['name'] = result[1]
             response['organization'] = result[2]
             response['domains'] = result[3].split()
+            response['recommendation'] = format(academic + normalization , '.2f')
+            response['originalrecommendation'] = normalization + academic
             responses.append(response)
     db.commit()
     db.close()
@@ -220,33 +267,16 @@ def expertsDetailAcemap(name):
     return []
 
 
-def merge2(a, b):
-    alen, blen = len(a), len(b)
-    mlen = min(alen, blen)
-    for i in range(mlen):
-        yield a[i]
-        yield b[i]
-
-    if alen > blen:
-        for i in range(mlen, alen):
-            yield a[i]
+def getStartAndEnd(limit, page, length):
+    if (page - 1) * limit < 0:
+        start = 0
     else:
-        for i in range(mlen, blen):
-            yield b[i]
-
-def merge3(a, b, c):
-    alen, blen, clen = len(a), len(b), len(c)
-    mlen = min(alen, blen, clen)
-    for i in range(mlen):
-        yield a[i]
-        yield b[i]
-        yield c[i]
-        
-    if mlen == clen:
-        res = [i for i in merge2(a[mlen:],b[mlen:])]
-    elif mlen == blen:
-        res = [i for i in merge2(a[mlen:],c[mlen:])]
+        start = (page - 1) * limit
+    if page * limit > length:
+        end = length
     else:
-        res = [i for i in merge2(a[mlen:],b[mlen:])]
-    for i in range(len(res)):
-        yield res[i]
+        end = page * limit  
+    if end < start:
+        end = 0
+        start = 0
+    return start, end
