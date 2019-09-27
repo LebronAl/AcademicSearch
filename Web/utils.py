@@ -23,7 +23,6 @@ def findExpertsScientistin(name, way):
             if max == 0:
                 max = 1
             for i in res['data']['talents']:
-                print(i)
                 academic = 70 * (i['hIndex'] / max)
                 normalization = 0
                 step = 1/8
@@ -195,7 +194,7 @@ def expertsDetailScientistin(uri):
                 try:
                     author['name'] = i["name"]
                     author['organization'] = i["org"]
-                    author['timesCollaborated'] = i["paperCoTimes"]
+                    author['timesCollaborated'] = i["paperCoTimes"] + i["patentCoTimes"] + i["projectCoTimes"]
                     author['hIndex'] = None
                     response['collaborators'].append(author)
                 except:
