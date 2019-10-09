@@ -15,12 +15,13 @@ Including another URLconf
 """
 from django.conf.urls import url
 from django.contrib import admin
-from Web.views import findExperts, expertDetail, login, logout, register
+from Web.views import findExperts, expertDetail, login, logout, register, groupMatch
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^api/find-experts-by-*', findExperts),
     url(r'^api/expert', expertDetail),
+    url(r'^api/group-matching', groupMatch),
     url(r'^api/login', login),
     url(r'^api/logout', logout),
     url(r'^api/register', register),
