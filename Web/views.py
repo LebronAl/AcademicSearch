@@ -122,7 +122,7 @@ def register(request):
         return HttpResponse("Request method error!")
 
 def groupMatch(request):
-    if not request.user.is_authenticated:
+    if request.user.is_authenticated:
         if request.method == 'POST':
             results = {"result":[]}
             para = json.loads(request.body.decode())
@@ -134,7 +134,7 @@ def groupMatch(request):
             count = 0
             items = []
 
-            db = sqlite3.connect("./Web/THUCloud/index.sqlite3")
+            db = sqlite3.connect("./Web/THUCloud/thucloud.sqlite3")
             db_cousor = db.cursor()
             while(count < itemNumber):
                 keywords = project[count]["keywords"]
