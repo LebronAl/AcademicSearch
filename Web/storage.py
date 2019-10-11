@@ -22,7 +22,7 @@ class Storage:
     def get(self,name,way,sources):
         hashkey = name + "_" +  way +  "_" + "_".join(sources)
         if self.timestamp.__contains__(hashkey):
-            if int(time.time()) - self.timestamp[hashkey] <= 200:
+            if int(time.time()) - self.timestamp[hashkey] <= 86400:
                 return self.data[hashkey]
             else:
                 self.lock.acquire()

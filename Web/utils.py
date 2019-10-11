@@ -13,29 +13,33 @@ def findExpertsScientistin(name, way):
     responses = []
     while True:
         index = random.randint(0,len(ScientistinCookie)-1)
-        para = {'q':name,'range':way,'token':ScientistinCookie[index],'size':100}
+        para = {'q':name,'range':way,'token':ScientistinCookie[index],'size':100,"withScore":1}
         res = json.loads(requests.get(ScientistinPrefix + "s",params=para).content.decode())
         if res['code'] != 130:
             max = 0
-            for i in res['data']['talents']:
-                if max < i['hIndex']:
-                    max = i["hIndex"]
+            if way == 'name':
+                sortType = 1
+                max = res['data']['talents'][0]
+            else:
+                sortType = 0
+                max = res['data']['scores'][0]
             if max == 0:
                 max = 1
+            num = 0
             for i in res['data']['talents']:
-                academic = 70 * (i['hIndex'] / max)
-                normalization = 0
-                step = 1/8
-                response={'fetchId':None,'name':None,"organization":None,"domains":[],'sources':['Scientistin'], 'academic':format(academic,".2f"), 'normalization':"", 'recommendation':""}
+                if way == 'name':
+                    academic = 100 * (i['hIndex'] / max)
+                else:
+                    academic = 100 * (res['data'][num] / max)
+                num += 1
+                response={'fetchId':None,'name':None,"organization":None,"domains":[],'sources':['Scientistin'], 'academic':format(academic,".2f")}
                 response['fetchId'] = i['uri']
                 try:
                     response['name'] = i['name'][0].replace("<em>","").replace("</em>","")
-                    normalization  = normalization + step
                 except:
                     pass
                 try:
                     response['organization'] = i['org'].replace("<em>","").replace("</em>","")
-                    normalization  = normalization + step
                 except:
                     pass
                 try: 
@@ -43,40 +47,8 @@ def findExpertsScientistin(name, way):
                     for j in range(len(temp)):
                         temp[j] = temp[j].replace("<em>","").replace("</em>","")
                     response['domains'] = temp    
-                    normalization  = normalization + step 
                 except:
                     pass
-                try:
-                    if len(i['papers']) != 0:
-                        normalization  = normalization + step
-                except:
-                    pass
-                try:
-                    if len(i['patents']) != 0:
-                        normalization  = normalization + step
-                except:
-                    pass
-                try:
-                    if len(i['nps']) != 0:
-                        normalization  = normalization + step
-                    elif len(i['cps'] != 0):
-                        normalization  = normalization + step
-                except:
-                    pass
-                try:
-                    if i['coWorkers'] != 0:
-                        normalization  = normalization + step
-                except:
-                    pass
-                try:
-                    _ = i['hIndex']
-                    normalization  = normalization + step
-                except:
-                    pass
-                normalization = 30 * normalization
-                response['normalization'] = format(normalization,".2f")
-                response['recommendation'] = format(academic + normalization,".2f")
-                response['originalrecommendation'] = normalization + academic
                 responses.append(response)
             break
         else:

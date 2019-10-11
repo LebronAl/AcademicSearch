@@ -181,8 +181,6 @@ def groupMatch(request):
 
                 items.append({'id':project[count]['id'],'keywords':keywords,'authors':authors,'experts':sorted_recommended_tuples,'expertdetail':recommendexperts,'solution':[],'MAX_RECOMMEND_DEGREE':MAX_RECOMMEND_DEGREE})
                 count += 1
-            db.commit()
-            db.close()
             #得到单个项目推荐度最高专家列表，计算群组匹配，使用贪心算法
 
             pointer  = [0]*int(itemNumber)
