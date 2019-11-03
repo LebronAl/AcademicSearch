@@ -5,20 +5,16 @@ from django.http import HttpResponse, JsonResponse
 from django.contrib import auth
 from django.contrib.auth.models import User
 import Web.utils as utils
-import Web.storage as storage
 import json
-import threading
 import math
 import operator
 import sqlite3
 
 
 hack = {'Scientistin':utils.findExpertsScientistin,'THUCloud':utils.findExpertsTHUCloud,'Acemap':utils.findExpertsAcemap}
-s = storage.Storage()
 
 def findExperts(request):
     if request.user.is_authenticated:
-        lock = threading.Lock()
         if request.method == 'POST':
             if request.path == '/api/find-experts-by-name':
                 index = 'name'
@@ -38,30 +34,28 @@ def findExperts(request):
                 return HttpResponse("Request url error!")
             para = json.loads(request.body.decode())
             results = {'resultForm':[],'totalEntries':0,'currentPage':para['currentPage']}
-            lock.acquire()
-            result = s.get(para['condition'],index,para['sources'])
-            lock.release()
-            if result != None:
-                start,end = utils.getStartAndEnd(para['size'],para['currentPage'],len(result))
-                results['resultForm'] = result[start:end]
-                results['totalEntries'] = len(result)
+            nameList = []
+            result = []
+            if len(para['sources']) == 1:
+                result,nameList = hack[para['sources'][0]](para['condition'],index)
+            elif len(para['sources']) == 2:
+                result,nameList = hack[para['sources'][0]](para['condition'],index)
+                r,a = hack[para['sources'][1]](para['condition'],index)
+                result.extend(r)
+                nameList = list(set(nameList).union(set(a)))
             else:
-                if len(para['sources']) == 1:
-                    result = hack[para['sources'][0]](para['condition'],index)
-                elif len(para['sources']) == 2:
-                    result = hack[para['sources'][0]](para['condition'],index)
-                    result.extend(hack[para['sources'][1]](para['condition'],index))
-                else:
-                    result = hack[para['sources'][0]](para['condition'],index)
-                    result.extend(hack[para['sources'][1]](para['condition'],index))
-                    result.extend(hack[para['sources'][2]](para['condition'],index))           
-                result = sorted(result,key=operator.itemgetter('originalrecommendation'),reverse=True)
-                lock.acquire()    
-                s.add(para['condition'],index,para['sources'],result)
-                lock.release()
-                start,end = utils.getStartAndEnd(para['size'],para['currentPage'],len(result))
-                results['resultForm'] = result[start:end] 
-                results['totalEntries'] = len(result)
+                result,nameList = hack[para['sources'][0]](para['condition'],index)
+                r,a = hack[para['sources'][1]](para['condition'],index)
+                result.extend(r)
+                nameList = list(set(nameList).union(set(a)))
+                r,a = hack[para['sources'][2]](para['condition'],index)
+                result.extend(r)
+                nameList = list(set(nameList).union(set(a)))           
+            result = sorted(result,key=operator.itemgetter('originalrecommendation'),reverse=True)
+            start,end = utils.getStartAndEnd(para['size'],para['currentPage'],len(result))
+            results['nameList'] = nameList
+            results['resultForm'] = result[start:end] 
+            results['totalEntries'] = len(result)
             return JsonResponse(results)
         else:
             return HttpResponse("Request method error!")
@@ -297,8 +291,6 @@ def groupMatch(request):
                 result.append({"id":item["id"],"keywords":item["keywords"],"authors":item["authors"],"experts":tmp})
                 
             results["result"] = result      
-
-            pass
             return JsonResponse(results)
         else:
             return HttpResponse("Request method error!")
