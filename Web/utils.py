@@ -217,14 +217,6 @@ def findExpertsAcemap(name, way):
 def expertsDetailAcemap(id):
     para = {'fetchId':id}
     res = json.loads(requests.post(AcemapPrefix + "expert", para,timeout=5).content.decode())
-    if not res['data']['expert'].__contains__("papers"):
-        res['data']['expert']['papers'] = []
-    if not res['data']['expert'].__contains__("collaborators"):
-        res['data']['expert']['collaborators'] = []
-    if not res['data']['expert'].__contains__("patents"):
-        res['data']['expert']['patents'] = []
-    if not res['data']['expert'].__contains__("projects"):
-        res['data']['expert']['projects'] = []
     res["data"]['expert']['sources'] = ["Acemap"]
     res["data"]['expert']['organization'] = ", ".join(res["data"]['expert']['organization'])
     return res['data']['expert']
