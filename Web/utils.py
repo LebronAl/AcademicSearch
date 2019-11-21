@@ -206,20 +206,30 @@ def expertsDetailTHUCloud(id):
 
 def findExpertsAcemap(name, way):
     responses = []
-    para = {'condition':name,'page':1,'pagesize':200}
-    res = json.loads(requests.post(AcemapPrefix + "find-experts-by-" + way, para, timeout=5).content.decode())
-    for i in res['data']['resultForm']:
-        response={'fetchId':i["fetchId"],'name':i["name"],"organization":", ".join(i["organization"]),"domains":i["domains"],'sources':['Acemap'], 'recommendation':format(100*i["recommendation"],".2f"),"originalrecommendation":100*i["recommendation"]}
-        responses.append(response)
-    nameList = res['data']['translationList']
+    nameList = []
+    try:
+        para = {'condition':name,'page':1,'pagesize':200}
+        res = json.loads(requests.post(AcemapPrefix + "find-experts-by-" + way, para, timeout=5).content.decode())
+        for i in res['data']['resultForm']:
+            response={'fetchId':i["fetchId"],'name':i["name"],"organization":", ".join(i["organization"]),"domains":i["domains"],'sources':['Acemap'], 'recommendation':format(100*i["recommendation"],".2f"),"originalrecommendation":100*i["recommendation"]}
+            responses.append(response)
+        nameList = res['data']['translationList']
+    except:
+        pass
     return responses,nameList
 
 def expertsDetailAcemap(id):
-    para = {'fetchId':id}
-    res = json.loads(requests.post(AcemapPrefix + "expert", para,timeout=5).content.decode())
-    res["data"]['expert']['sources'] = ["Acemap"]
-    res["data"]['expert']['organization'] = ", ".join(res["data"]['expert']['organization'])
-    return res['data']['expert']
+    response = {'fetchId': None, 'name': None, 'organization': None, 'hIndex': None, 'domains': [], 'sources': ['THUCloud'], 'papers': [], 'collaborators': [], 'patents': [], 'projects': []}
+    try:
+        para = {'fetchId':id}
+        res = json.loads(requests.post(AcemapPrefix + "expert", para,timeout=5).content.decode())
+        res["data"]['expert']['sources'] = ["Acemap"]
+        res["data"]['expert']['organization'] = ", ".join(res["data"]['expert']['organization'])
+        for i in res["data"]['expert']['collaborators']:
+            i["organization"] = ", ".join(i["organization"])
+        return res['data']['expert']
+    except:
+        return response
 
 def getStartAndEnd(limit, page, length):
     if (page - 1) * limit < 0:
