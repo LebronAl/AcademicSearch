@@ -16,18 +16,14 @@ def findExpertsScientistin(name, way):
         if len(res['data']['talents']) == 0:
             return responses,nameList
         max = 0
-        if way == 'name':
-            max = res['data']['talents'][0]['hIndex']
-        else:
-            max = res['data']['scores'][0]
+        for i in res['data']['talents']:
+            if i['hIndex'] > max : 
+                max = i['hIndex'] 
         if max == 0:
             max = 1
         num = 0
         for i in res['data']['talents']:
-            if way == 'name':
-                academic = 100 * (i['hIndex'] / max)
-            else:
-                academic = 100 * (res['data']['scores'][num] / max)
+            academic = 100 * (i['hIndex'] / max)
             num += 1
             response={'fetchId':None,'name':None,"organization":None,"domains":[],'sources':['Scientistin'], 'recommendation':format(academic,".2f"),"originalrecommendation":academic}
             response['fetchId'] = i['uri']
