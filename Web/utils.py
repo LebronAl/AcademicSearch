@@ -155,6 +155,7 @@ def expertsDetailScientistin(uri):
 
 def findExpertsTHUCloud(name, way):
     responses = []
+    nameList = [name]
     try:
         db = sqlite3.connect("./Web/THUCloud/thucloud.sqlite3")
     except:
@@ -178,7 +179,6 @@ def findExpertsTHUCloud(name, way):
             responses.append(response)
     db.commit()
     db.close()
-    nameList = [name]
     return responses,nameList
 
 def expertsDetailTHUCloud(id):
@@ -202,10 +202,12 @@ def expertsDetailTHUCloud(id):
 
 def findExpertsAcemap(name, way):
     responses = []
-    nameList = []
+    nameList = [name]
     try:
         para = {'condition':name,'page':1,'pagesize':200}
-        res = json.loads(requests.post(AcemapPrefix + "find-experts-by-" + way, para, timeout=5).content.decode())
+        if way == "tag":
+	        way = "domain"
+        res = json.loads(requests.post(AcemapPrefix + "find-experts-by-" + way, para, timeout=10).content.decode())
         for i in res['data']['resultForm']:
             response={'fetchId':i["fetchId"],'name':i["name"],"organization":", ".join(i["organization"]),"domains":i["domains"],'sources':['Acemap'], 'recommendation':format(100*i["recommendation"],".2f"),"originalrecommendation":100*i["recommendation"]}
             responses.append(response)
@@ -218,7 +220,7 @@ def expertsDetailAcemap(id):
     response = {'fetchId': None, 'name': None, 'organization': None, 'hIndex': None, 'domains': [], 'sources': ['THUCloud'], 'papers': [], 'collaborators': [], 'patents': [], 'projects': []}
     try:
         para = {'fetchId':id}
-        res = json.loads(requests.post(AcemapPrefix + "expert", para,timeout=5).content.decode())
+        res = json.loads(requests.post(AcemapPrefix + "expert", para, timeout=10).content.decode())
         res["data"]['expert']['sources'] = ["Acemap"]
         res["data"]['expert']['organization'] = ", ".join(res["data"]['expert']['organization'])
         for i in res["data"]['expert']['collaborators']:
